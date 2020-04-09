@@ -1,7 +1,4 @@
-# reference
-# https://www.geeksforgeeks.org/a-search-algorithm/
 
-#make sure if the user's environment is all set
 try:
     import pygame
     import sys
@@ -21,10 +18,11 @@ except:
     from tkinter import messagebox
     import os
 
-from collections import defaultdict
-import heapq
 
-screen = pygame.display.set_mode((800, 800))
+WIDTH = 800
+HEIGHT = 800
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+screen.fill((255,255,255))
 
 
 class spot:
@@ -38,318 +36,241 @@ class spot:
         self.previous = None
         self.block = False
         self.closed = False
-        # cost start out with 1 because getting to start point takes one step
-        self.cost = 1
+        self.value = 1
 
-    def show(self, color, size):
-        if not self.closed:
-            pygame.draw.rect(screen, color, (self.i * w, self.j * h, w, h), size)
+    def draw_line(self, color, st):
+        cur_loc_x = self.i * (WIDTH//row)
+        cur_loc_y = self.j * (HEIGHT//cols)
+        pygame.draw.line(screen, color, (cur_loc_x, cur_loc_y),(cur_loc_x + (WIDTH//row), cur_loc_y + (HEIGHT//cols)), st)
+        pygame.display.update()
+
+    def show(self, color, st):
+        if self.closed == False:
+            pygame.draw.rect(screen, color, (self.i * w, self.j * h, w, h), st)
             pygame.display.update()
 
-    def addNeighbors(self):
-        # add 4 neighbors (four directions only (right, left, top, bottom)) to current node
+
+    def addNeighbors(self, grid):
         i = self.i
         j = self.j
+        if i < cols - 1 and grid[self.i + 1][j].block == False:
+            self.neighbors.append(grid[self.i + 1][j])
+        if i > 0 and grid[self.i - 1][j].block == False:
+            self.neighbors.append(grid[self.i - 1][j])
+        if j < row - 1 and grid[self.i][j + 1].block == False:
+            self.neighbors.append(grid[self.i][j + 1])
+        if j > 0 and grid[self.i][j - 1].block == False:
+            self.neighbors.append(grid[self.i][j - 1])
 
-        # 0 and 49 are on the grid but don't have neighbours as their neighbours are out of range
-        if i < cols-1 and grid[i + 1][j].block == False:
-            self.neighbors.append(grid[i + 1][j])
-        if i > 0 and grid[i - 1][j].block == False:
-            self.neighbors.append(grid[i - 1][j])
-        if j < row-1 and grid[i][j + 1].block == False:
-            self.neighbors.append(grid[i][j + 1])
-        if j > 0 and grid[i][j - 1].block == False:
-            self.neighbors.append(grid[i][j - 1])
+        # if there are only 4 neighbors, it is manhattan distance
+        # if there are 8, then that is diagonal
+        if j > 0 and i > 0 and grid[self.i-1][j - 1].block == False:
+            self.neighbors.append(grid[self.i-1][j - 1])
+        if j < row -1 and i < cols-1 and grid[self.i+1][j + 1].block == False:
+            self.neighbors.append(grid[self.i+1][j + 1])
+        if j > 0 and i < cols-1 and grid[self.i+1][j - 1].block == False:
+            self.neighbors.append(grid[self.i+1][j - 1])
+        if j < row -1 and i > 0 and grid[self.i-1 ][j + 1].block == False:
+            self.neighbors.append(grid[self.i-1][j + 1])
+
 
 
 cols = 50
+grid = [0 for i in range(cols)]
 row = 50
-grid = [[0 for i in range(cols)] for i in range(row)]
 openSet = []
-closedSet = set()
-path = set()
+closedSet = []
 red = (255, 0, 0)
 green = (0, 255, 0)
 blue = (0, 0, 255)
 grey = (220, 220, 220)
-white = (255,255,255)
-w = 800 // row # 16
-h = 800 // cols # 16
+yellow = (255,255,0)
+light_black = (70, 70, 70)
+w = WIDTH // cols
+h = HEIGHT // row
 cameFrom = []
 
+# create 2d array
+for i in range(cols):
+    grid[i] = [0 for i in range(row)]
 
 # Create Spots
-# display each coordinate
 for i in range(cols):
     for j in range(row):
         grid[i][j] = spot(i, j)
-        grid[i][j].show((255, 255, 255), 1)
 
-
-# get 4 neighbours (right, left, top, bottom) to each coordinate
+# Set start and end node
+# start = grid[12][5]
+# end = grid[3][6]
+# SHOW RECT
 for i in range(cols):
     for j in range(row):
-        grid[i][j].addNeighbors()
+        grid[i][j].show((0, 0, 0), 1)
 
-# create menu
-class Menu:
-    def __init__(self):
-        self.root = Tk()
-        self.root.title("Path finding vizualization")
-        # w = Label(self.root, text='Please submit cordinates of stard and end points!')
-        # w.place()
-        # message = Entry(self.root,text="Please submit cordinates where you would like to start").pack()
-        label = Label(self.root, text='Start Coordinate(x,y): ')
-        self.startBox = Entry(self.root)
-        label1 = Label(self.root, text='End Coordinate(x,y): ')
-        self.endBox = Entry(self.root)
-        var = IntVar()
-        showPath = Checkbutton(self.root, text='Show Steps :', onvalue=1, offvalue=0, variable=var)
-
-        # Submit(startBox,endBox)
-        # you cannot pass in startbox as it only passes ".!entry",
-        submit = Button(self.root, text='Submit',command=self.Submit)
-
-        showPath.grid(columnspan=2, row=2)
-        submit.grid(columnspan=2, row=3)
-        label1.grid(row=1, pady=3)
-        self.endBox.grid(row=1, column=1, pady=3)
-        self.startBox.grid(row=0, column=1, pady=3)
-        label.grid(row=0, pady=3)
-
-        # Processes all pending events, calls event callbacks,
-        # completes any pending geometry management,
-        # redraws widgets as necessary,
-        # and calls all pending idle tasks.
-        self.root.update()
-
-    def Submit(self):
-        # print(self.startBox)
-        s = self.startBox
-        e = self.endBox
-        global st
-        global ed
-        st = s.get().split(',')
-        ed = e.get().split(',')
-        # start and end coordinates
-        # self.start = grid[int(st[0])][int(st[1])]
-        # self.end = grid[int(ed[0])][int(ed[1])]
-        self.start = grid[int(st[0])][int(st[1])] # [10,10]
-        self.end = grid[int(ed[0])][int(ed[1])]
-        self.root.quit()
-        self.root.destroy()
-
-# class Result:
-#     def __init__(self,res):
-#         self.res = res
+for i in range(0, row):
+    grid[0][i].show(grey, 0)
+    grid[0][i].block = True
+    grid[cols - 1][i].block = True
+    grid[cols - 1][i].show(grey, 0)
+    grid[i][row - 1].show(grey, 0)
+    grid[i][0].show(grey, 0)
+    grid[i][0].block = True
+    grid[i][row - 1].block = True
 
 
-menu = Menu()
+def onsubmit():
+    global start
+    global end
+    st = startBox.get().split(',')
+    ed = endBox.get().split(',')
+    start = grid[int(st[0])][int(st[1])]
+    end = grid[int(ed[0])][int(ed[1])]
+    window.quit()
+    window.destroy()
+
+
+window = Tk()
+label = Label(window, text='Start(x,y): ')
+startBox = Entry(window)
+label1 = Label(window, text='End(x,y): ')
+endBox = Entry(window)
+var = IntVar()
+showPath = ttk.Checkbutton(window, text='Show Steps :', onvalue=1, offvalue=0, variable=var)
+
+submit = Button(window, text='Submit', command=onsubmit)
+
+showPath.grid(columnspan=2, row=2)
+submit.grid(columnspan=2, row=3)
+label1.grid(row=1, pady=3)
+endBox.grid(row=1, column=1, pady=3)
+startBox.grid(row=0, column=1, pady=3)
+label.grid(row=0, pady=3)
+
+window.update()
 mainloop()
 
-# display start point
-menu.start.show((255, 8, 127), 0)
-menu.end.show((255, 8, 127), 0)
-
-# put the starting node on the open
-openSet.append(st)
-
-
-def Mouse_Path(x,y):
-
-    x = x // w
-    y = y // h
-    # fill grid
-    grid[x][y].show(white,0) # how to fill each grid
-    cur_loc = grid[x][y]
-    if not cur_loc.block:
-    #if (x,y) not in closedSet:
-        # current location is marked as blocked
-        cur_loc.block = True
-        closedSet.add((x, y))
-
-def Result_popup(res):
-    Tk().wm_withdraw()
-    messagebox.askokcancel('Program Finished', (
-            'The program finished, the shortest distance \n to the path is ' + str(
-        res) + ' blocks away, \n would you like to re run the program?'))
-
-def show_path():
-    for x,y in path:
-        grid[x][y].show(blue, 0)
-
-
-#m = Mouse_Path
-
-def dijkstra():
-
-    # how to keep track of fastest way
-
-    r,c = int(st[0]),int(st[1])
-    heap = [(0,r,c)]  # first verex has no cost
-    surroundings = [(1, 0), (1, -1), (0, -1), (-1, -1), (-1, 0), (-1, 1), (0, 1), (1, 1)]
-    #dic = defaultdict(list)
-
-    while heap:
-
-        dst,r,c = heapq.heappop(heap)  # spit the vertex with smallest cost(path)
-
-        if r == int(ed[0]) and c == int(ed[1]):
-            #print(closedSet)
-            # including end coordinate so plus 1
-            show_path()
-            return Result_popup(dst+1)
-
-        if r != int(st[0]) and c != int(st[1]):
-            path.add((r, c))
-        grid[r][c].show(green, 0)
-        grid[r][c].has_neighbor = True
-        # get surroundings
-        for sur in surroundings:
-            new_r = r+sur[0]
-            new_c = c+sur[1]
-            if 0 <= new_r < row and 0 <= new_c < cols and (new_r,new_c) not in closedSet:
-                #grid[new_r][new_r].show(green, 0)
-                #dic[dst].append([new_r,new_c])
-                closedSet.add((new_r,new_c))
-                heapq.heappush(heap, (dst+1, new_r, new_c))
-
-
-def DFS():
-    r,c = st
-    cnt = 0
-    res = dfs(int(r),int(c),cnt)
-
-    # root probably should be outside of constructor
-    # originally, I thought I was gonna call root (global) here but it is in a constructor so i can't
-    # but created a helper function to solve this problem
-    Result_popup(res)
-
-
-
-#print(ed[0],ed[1])
-def dfs(r, c,cnt):
-
-    ### if start and end is too far,
-
-    # check if current cell is valid cell
-    # program returns [Previous line repeated 992 more times] and crashes
-    # base case, constraints
-    #print(r,c)
-    if 0 > r or r >= row or 0 > c or c >= cols or (r, c) in closedSet:
-        return False
-
-    #print(r,c)
-    if r == int(ed[0]) and c == int(ed[1]):
-
-        return cnt
-
-    closedSet.add((r, c))
-    grid[r][c].show(green,0)
-    return dfs(r + 1, c, cnt+1) or dfs(r, c+1, cnt+1) or dfs(r-1, c, cnt+1) or dfs(r, c - 1, cnt+1)
-
-
-# pygame initiate
 pygame.init()
+openSet.append(start)
+
+
+def mousePress(x):
+    t = x[0]
+    w = x[1]
+    g1 = t // (800 // cols)
+    g2 = w // (800 // row)
+    acess = grid[g1][g2]
+    if acess != start and acess != end:
+        if acess.block == False:
+            acess.block = True
+            acess.show(light_black, 0)
+
+
+end.show((255, 8, 127), 0)
+start.show((255, 8, 127), 0)
+
+loop = True
+while loop:
+    ev = pygame.event.get()
+
+    for event in ev:
+        if event.type == pygame.QUIT:
+            pygame.quit()
+        if pygame.mouse.get_pressed()[0]:
+            try:
+                pos = pygame.mouse.get_pos()
+                mousePress(pos)
+            except AttributeError:
+                pass
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_SPACE:
+                loop = False
+                break
+
+for i in range(cols):
+    for j in range(row):
+        grid[i][j].addNeighbors(grid)
+
+
+def heurisitic(n, e):
+    d = math.sqrt((n.i - e.i) ** 2 + (n.j - e.j) ** 2)
+    # d = abs(n.i - e.i) + abs(n.j - e.j)
+    return d
+
+light_blue = (0, 255, 255)
 
 def main():
 
-    """
-    algorithm
-    1,
-    :return:
-    """
-
-    while openSet:
-        least_f = float('inf')
-        # find the node with the least f
-        # ‘f’ which is a parameter equal to the sum of two other parameters – ‘g’ and ‘h’
+    if len(openSet) > 0:
+        lowestIndex = 0
         for i in range(len(openSet)):
-            if openSet[i].f < least_f:
-                least_f = i
+            if openSet[i].f < openSet[lowestIndex].f:
+                lowestIndex = i
 
-        q = openSet.pop(i)
+        current = openSet[lowestIndex]
+        if current == end:
+            print('done', current.f)
+            start.show((255, 8, 127), 0)
+            temp = current.f
+            for i in range(round(current.f)):
+                current.closed = False
+                current.draw_line(yellow, 1)
+                current = current.previous
+            end.show((255, 8, 127), 0)
 
-
-
-# detect mouse coordinate
-run = True
-while run:
-
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
+            Tk().wm_withdraw()
+            result = messagebox.askokcancel('Program Finished', (
+                        'The program finished, the shortest distance \n to the path is ' + str(
+                    temp) + ' blocks away, \n would you like to re run the program?'))
+            if result == True:
+                os.execl(sys.executable, sys.executable, *sys.argv)
+            else:
+                ag = True
+                while ag:
+                    ev = pygame.event.get()
+                    for event in ev:
+                        if event.type == pygame.KEYDOWN:
+                            ag = False
+                            break
             pygame.quit()
 
-        # if user takes any mouse related actions
-        #if event.type == pygame.MOUSEBUTTONDOWN:
+        openSet.pop(lowestIndex)
+        closedSet.append(current)
 
-        # mouse.get_pressed()[0] denotes left click
-        if pygame.mouse.get_pressed()[0]:
-            # get mouse current coordinate
-            Mouse_x, Mouse_y = pygame.mouse.get_pos() #  # how to get current position
-            cur_x = int(Mouse_x) // w
-            cur_y = int(Mouse_y) // h
+        neighbors = current.neighbors
+        for i in range(len(neighbors)):
+            neighbor = neighbors[i]
+            if neighbor not in closedSet:
+                #g = the movement cost to move from the starting point to a given square on the grid, following the path generated to get there.
+                tempG = current.g + 1
+                if neighbor in openSet:
+                    # important cuz when seeing bigger g, just break
+                    if neighbor.g > tempG:
+                        neighbor.g = tempG
+                else:
+                    neighbor.g = tempG
+                    openSet.append(neighbor)
 
-            # not to override start point and end point
-            # if cur_x != int(st[0]) and cur_x != int(st[1]) and cur_x != int(ed[0]) and cur_x != int(ed[1]) and cur_y != int(st[0]) and cur_y != int(st[1]) and \
-            #     cur_y != int(ed[0]) and cur_y != int(ed[0]):
+            # h = the estimated movement cost to move from that given square on the grid to the final destination.
+            neighbor.h = heurisitic(neighbor, end)
+            neighbor.f = neighbor.g + neighbor.h
 
-            #print(Mouse_x,Mouse_y)
-            #print(a,b)
-            #Mouse_Path(Mouse_x,Mouse_y)
-            # fill a,b with white
-            Mouse_Path(Mouse_x,Mouse_y)
+            if neighbor.previous == None:
+                neighbor.previous = current
 
-        elif event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_SPACE:
-                #print(closedSet)
-                loop = False
-                #DFS()
-                dijkstra()
-                break
-        # when left click is not pressed any more
-        # go to DFS
+    #if var.get():
+    for i in range(len(openSet)):
+        openSet[i].show(green, 0)
 
+    for i in range(len(closedSet)):
+        if closedSet[i] != start:
+            closedSet[i].show((0,255,250), 0)
+
+    current.closed = True
+
+
+while True:
+    ev = pygame.event.poll()
+    if ev.type == pygame.QUIT:
+        pygame.quit()
     pygame.display.update()
-
-
-# import tkinter as tk
-# import pygame
-#
-# # tk how to put widgt together
-# # pack,
-#
-# H = 1200
-# W = 800
-# # to do list
-# # create tile
-#
-# root = tk.Tk()
-#
-# class PathVisualization:
-#     def __init__(self,H,W):
-#         self.h = H
-#         self.w = W
-#
-#     def create_frame(self):
-#         # frame
-#         canvas = tk.Canvas(root, height=self.h, width=self.w)
-#         canvas.pack()
-
-# class Mouse_Path:
-#     def __init__(self,x,y):
-#         # 0 denotes open, 1 denotes close
-#         # self.path = [[0 for _ in range(cols)] for _ in range(row)]
-#         self.x = x
-#         self.y = y
-#
-#     def Visualizze_path(self):
-#
-#         # 2 ideas to check if next coordinate is an blocktacle or not,
-#         # create 2d array, 0 denotes not 1 denotes it is,
-#         # or create another array and put coordinator as tuple
-#         # how can i access
-#
-#         grid[self.x][self.y].show(white,1)
-
-# PathVisualization(H,W)
+    main()
