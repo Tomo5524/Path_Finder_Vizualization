@@ -39,9 +39,75 @@ class spot:
         self.value = 1
 
     def draw_line(self, color, st):
-        cur_loc_x = self.i * (WIDTH//row)
-        cur_loc_y = self.j * (HEIGHT//cols)
-        pygame.draw.line(screen, color, (cur_loc_x, cur_loc_y),(cur_loc_x + (WIDTH//row), cur_loc_y + (HEIGHT//cols)), st)
+        # create cases for 8 directions
+        pre_loc = grid[self.i][self.j].previous
+        r = pre_loc.i * (WIDTH // row)
+        c =  pre_loc.j * (HEIGHT // cols)
+        #r,c = self.i,self.j
+        cur_loc_x = self.i * (WIDTH // row)
+        cur_loc_y = self.j * (HEIGHT // cols)
+
+        pygame.draw.line(screen, color, (cur_loc_x + ((WIDTH // row) // 2), cur_loc_y + (HEIGHT // cols) // 2),
+                         (r + ((WIDTH // row) // 2),  c + (HEIGHT // cols) // 2), st)
+
+        # end line goes into pre_loc
+        # cur_locx and cur_loc_y denotes the topleft of the current grid
+        # if pre_loc == grid[r - 1][c -1]:
+        #     pygame.draw.line(screen, color, (cur_loc_x + ((WIDTH // row) // 2), cur_loc_y + ((HEIGHT // cols) // 2)),
+        #                      (cur_loc_x - ((WIDTH // row) // 2), cur_loc_y - ((HEIGHT // cols) // 2)), st)
+        #
+        # elif pre_loc == grid[r + 1][c]:
+        #     pygame.draw.line(screen, color, (cur_loc_x + ((WIDTH // row) // 2), cur_loc_y + ((HEIGHT // cols) // 2)),
+        #                      (cur_loc_x + (WIDTH // row), cur_loc_y + (HEIGHT // cols)), st)
+        #
+        # elif pre_loc == grid[r - 1][c]:
+        #     pygame.draw.line(screen, color, (cur_loc_x + ((WIDTH // row) // 2), cur_loc_y + ((HEIGHT // cols) // 2)),
+        #                      (cur_loc_x - (WIDTH // row), cur_loc_y + ((HEIGHT // cols) // 2)), st)
+        #
+        # elif pre_loc == grid[r + 1][c]:
+        #     pygame.draw.line(screen, color, (cur_loc_x + ((WIDTH // row) // 2), cur_loc_y + ((HEIGHT // cols) // 2)),
+        #                      (cur_loc_x + (WIDTH // row), cur_loc_y), st)
+        #
+        # elif pre_loc == grid[r][c - 1]:
+        #     pygame.draw.line(screen, color, (cur_loc_x + ((WIDTH // row) // 2), cur_loc_y + ((HEIGHT // cols) // 2)),
+        #                      (cur_loc_x + ((WIDTH // row) // 2), cur_loc_y - (HEIGHT // cols)), st)
+        #
+        # elif pre_loc == grid[r][c + 1]:
+        #     pygame.draw.line(screen, color, (cur_loc_x + ((WIDTH // row) // 2), cur_loc_y + ((HEIGHT // cols) // 2)),
+        #                      (cur_loc_x, cur_loc_y + (HEIGHT // cols)), st)
+        #
+        # elif pre_loc == grid[r + 1][c - 1]:
+        #     pygame.draw.line(screen, color, (cur_loc_x + ((WIDTH // row) // 2), cur_loc_y + ((HEIGHT // cols) // 2)),
+        #                      (cur_loc_x + (WIDTH // row), cur_loc_y - ((HEIGHT // cols) // 2)), st)
+        #
+        # elif pre_loc == grid[r - 1][c + 1]:
+        #     pygame.draw.line(screen, color, (cur_loc_x + ((WIDTH // row) // 2), cur_loc_y + ((HEIGHT // cols) // 2)),
+        #                      (cur_loc_x - ((WIDTH // row) // 2), cur_loc_y + (HEIGHT // cols)), st)
+
+        # if i > 0 and grid[self.i - 1][j].block == False:
+        #     self.neighbors.append(grid[self.i - 1][j])
+        # if j < row - 1 and grid[self.i][j + 1].block == False:
+        #     self.neighbors.append(grid[self.i][j + 1])
+        # if j > 0 and grid[self.i][j - 1].block == False:
+        #     self.neighbors.append(grid[self.i][j - 1])
+        #
+        # # if there are only 4 neighbors, it is manhattan distance
+        # # if there are 8, then that is diagonal
+        # if j > 0 and i > 0 and grid[self.i-1][j - 1].block == False:
+        #     self.neighbors.append(grid[self.i-1][j - 1])
+        # if j < row -1 and i < cols-1 and grid[self.i+1][j + 1].block == False:
+        #     self.neighbors.append(grid[self.i+1][j + 1])
+        # if j > 0 and i < cols-1 and grid[self.i+1][j - 1].block == False:
+        #     self.neighbors.append(grid[self.i+1][j - 1])
+        # if j < row -1 and i > 0 and grid[self.i-1 ][j + 1].block == False:
+        #     self.neighbors.append(grid[self.i-1][j + 1])
+
+        # cur_loc_x = self.i * (WIDTH//row)
+        # cur_loc_y = self.j * (HEIGHT//cols)
+
+        # else:
+        #     pygame.draw.line(screen, color, (cur_loc_x, cur_loc_y),(cur_loc_x + (WIDTH//row), cur_loc_y + (HEIGHT//cols)), st)
+
         pygame.display.update()
 
     def show(self, color, st):
@@ -76,7 +142,6 @@ class spot:
 
 
 cols = 50
-grid = [0 for i in range(cols)]
 row = 50
 openSet = []
 closedSet = []
@@ -91,21 +156,26 @@ h = HEIGHT // row
 cameFrom = []
 
 # create 2d array
-for i in range(cols):
-    grid[i] = [0 for i in range(row)]
+grid = [[0 for i in range(cols)] for i in range(row)]
 
 # Create Spots
+
 for i in range(cols):
     for j in range(row):
+        # create node for each coordinate
         grid[i][j] = spot(i, j)
+        # SHOW RECT
+        grid[i][j].show((0, 0, 0), 1)
 
 # Set start and end node
 # start = grid[12][5]
 # end = grid[3][6]
-# SHOW RECT
-for i in range(cols):
-    for j in range(row):
-        grid[i][j].show((0, 0, 0), 1)
+
+
+# for i in range(cols):
+#     for j in range(row):
+            #grid[i][j].show((0, 0, 0), 1)
+
 
 for i in range(0, row):
     grid[0][i].show(grey, 0)
@@ -156,8 +226,8 @@ openSet.append(start)
 def mousePress(x):
     t = x[0]
     w = x[1]
-    g1 = t // (800 // cols)
-    g2 = w // (800 // row)
+    g1 = t // (WIDTH // cols)
+    g2 = w // (HEIGHT // row)
     acess = grid[g1][g2]
     if acess != start and acess != end:
         if acess.block == False:
@@ -215,6 +285,8 @@ def main():
                 current.closed = False
                 current.draw_line(yellow, 1)
                 current = current.previous
+
+            #start.draw_line(yellow,1)
             end.show((255, 8, 127), 0)
 
             Tk().wm_withdraw()
