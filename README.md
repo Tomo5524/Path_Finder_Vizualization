@@ -1,10 +1,14 @@
 # Path_Finder_Vizualization
 A python visualization of the A* path finding algorithm. It allows you to pick your start and end location and view the process of finding the shortest path.
 
+In Screenshot1, you can decide where to start and end. 
 [Screenshot_1](https://user-images.githubusercontent.com/35819620/79293063-a9e6d080-7f0d-11ea-8da0-349581ee74f6.PNG)
 
-[Screenshot_2](https://user-images.githubusercontent.com/35819620/79294650-a2c1c180-7f11-11ea-95ca-1165be7784d1.PNG)
+In Screenshot2, the grid fileed in red denotes the start point, the other grid filled in blue denotes the end point
+[Screen_shot2](https://user-images.githubusercontent.com/35819620/79295620-0fd65680-7f14-11ea-882a-dfa7b0f46216.PNG)
 
-[Screenshot_3](https://user-images.githubusercontent.com/35819620/79294690-bd943600-7f11-11ea-8285-494b6de34b90.PNG)
+In Screenshot3, all the grids filled in black denotes obstacles
+[Screen_shot3](https://user-images.githubusercontent.com/35819620/79295644-21b7f980-7f14-11ea-945c-0088b62805e8.PNG)
 
-[Screenshot_4](https://user-images.githubusercontent.com/35819620/79294725-d3096000-7f11-11ea-9986-d2ce9a9c039f.PNG)
+In Screenshot4, the yelow line from start point to end point denotes the shortest path. Result popup screen showcases the steps from start to end and the time the program takes to finish 
+[Screen_shot4](https://user-images.githubusercontent.com/35819620/79295667-33010600-7f14-11ea-9df8-76269648ba6f.PNG)
