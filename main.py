@@ -157,9 +157,9 @@ def mousePress(x):
 
 # push start node to a list
 openSet.append([float('inf'), start.i, start.j])
-start.seen = True
-end.show((255, 8, 127), 0)
-start.show((255, 8, 127), 0)
+
+end.show(blue, 0)
+start.show(red, 0)
 
 loop = True
 while loop:
@@ -295,5 +295,5 @@ while True:
     if ev.type == pygame.QUIT:
         pygame.quit()
     pygame.display.update()
-    Astar_finder()
-
+    if not Astar_finder():
+        No_path()
